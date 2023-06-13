@@ -5,6 +5,7 @@ use dioxus_native_core::prelude::{AttributeMaskBuilder, Dependancy, NodeMaskBuil
 use dioxus_native_core::SendAnyMap;
 use dioxus_native_core_macro::partial_derive_state;
 use skia_safe::Color;
+use std::vec::Vec;
 
 use crate::{parse_color, CustomAttributeValues};
 
@@ -13,7 +14,7 @@ pub struct Style {
     pub background: Color,
     pub relative_layer: i16,
     pub border: BorderSettings,
-    pub shadow: ShadowSettings,
+    pub shadows: Vec<ShadowSettings>,
     pub radius: f32,
     pub image_data: Option<Vec<u8>>,
     pub svg_data: Option<Vec<u8>>,
@@ -51,8 +52,8 @@ impl State<CustomAttributeValues> for Style {
 
         let mut background = Color::TRANSPARENT;
         let mut relative_layer = 0;
-        let mut shadow = ShadowSettings::default();
-        let mut border = BorderSettings::default();
+        let mut shadows: Vec<ShadowSettings> = vec![];
+        let mut border: BorderSettings = BorderSettings::default();
         let mut radius = 0.0;
         let mut image_data = None;
         let mut svg_data = None;
@@ -84,9 +85,29 @@ impl State<CustomAttributeValues> for Style {
                     }
                     "shadow" => {
                         if let Some(attr) = attr.value.as_text() {
-                            if let Some(new_shadow) = parse_shadow(attr) {
-                                shadow = new_shadow;
+                            let mut chunks = Vec::new();
+                            let mut current = String::new();
+                            let mut in_parenthesis = false;
+
+                            for character in attr.chars() {
+                                if character == '(' {
+                                    in_parenthesis = true;
+                                } else if character == ')' {
+                                    in_parenthesis = false;
+                                }
+
+                                if character == ',' && !in_parenthesis {
+                                    chunks.push(std::mem::take(&mut current));
+                                } else {
+                                    current.push(character);
+                                }
                             }
+
+                            if current.len() > 0 {
+                                chunks.push(current);
+                            }
+
+                            shadows = chunks.iter().map(|chunk| parse_shadow(chunk).unwrap_or_default()).collect();
                         }
                     }
                     "radius" => {
@@ -123,7 +144,7 @@ impl State<CustomAttributeValues> for Style {
 
         let changed = (background != self.background)
             || (relative_layer != self.relative_layer)
-            || (shadow != self.shadow)
+            || (shadows != self.shadows)
             || (border != self.border)
             || (radius != self.radius)
             || (image_data != self.image_data)
@@ -132,7 +153,7 @@ impl State<CustomAttributeValues> for Style {
         *self = Self {
             background,
             relative_layer,
-            shadow,
+            shadows,
             border,
             radius,
             image_data,
@@ -145,12 +166,14 @@ impl State<CustomAttributeValues> for Style {
 pub fn parse_shadow(value: &str) -> Option<ShadowSettings> {
     let value = value.to_string();
     let mut shadow_values = value.split_ascii_whitespace();
+
     Some(ShadowSettings {
         x: shadow_values.next()?.parse().ok()?,
         y: shadow_values.next()?.parse().ok()?,
-        intensity: shadow_values.next()?.parse().ok()?,
-        size: shadow_values.next()?.parse().ok()?,
-        color: parse_color(shadow_values.next()?)?,
+        blur_radius: shadow_values.next()?.parse().ok()?,
+        spread_radius: shadow_values.next()?.parse().ok()?,
+        color: parse_color(&shadow_values.clone().collect::<Vec<&str>>().join(" "))?,
+        inset: false,
     })
 }
 
@@ -198,10 +221,11 @@ pub struct BorderSettings {
 }
 
 #[derive(Default, Clone, Debug, PartialEq)]
-pub struct ShadowSettings {
+pub struct Shadow {
     pub x: f32,
     pub y: f32,
-    pub intensity: u8,
-    pub size: f32,
+    pub blur_radius: f32,
+    pub spread_radius: f32,
     pub color: Color,
+    pub inset: bool,
 }

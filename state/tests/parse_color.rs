@@ -9,6 +9,12 @@ fn parse_manual_color() {
 
 #[test]
 fn parse_rgb_color() {
-    let color = parse_color("rgb(91, 123, 57");
+    let color = parse_color("rgb(91, 123, 57)");
     assert_eq!(color, Some(Color::from_rgb(91, 123, 57)));
+}
+
+#[test]
+fn parse_rgb_color_with_alpha() {
+    let color = parse_color("rgb(91, 123, 57, 127)");
+    assert_eq!(color, Some(Color::from_argb(127, 91, 123, 57)));
 }

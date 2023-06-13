@@ -17,6 +17,7 @@ fn app(cx: Scope) -> Element {
         shadow_size.set((*shadow_size.get() + y).clamp(0.0, 100.0));
     };
 
+
     render!(
         container {
             height: "100%",
@@ -24,12 +25,15 @@ fn app(cx: Scope) -> Element {
             padding: "60",
             onwheel: onwheel,
             rect {
-                shadow: "0 10 210 {shadow_size} red",
+                shadow: "0 0 3 0 red",
+                border: "1 solid green",
                 height: "100%",
                 width: "100%",
                 background: "black",
                 padding: "25",
+                radius: "80",
                 label {
+                    color: "white",
                     "Scroll!"
                 }
             }

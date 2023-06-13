@@ -3,7 +3,7 @@ use freya_dom::prelude::DioxusNode;
 use freya_node_state::{References, Style, BorderStyle, BorderAlignment};
 use skia_safe::{
     textlayout::FontCollection, BlurStyle, Canvas, MaskFilter, Paint, PaintStyle, Path,
-    PathDirection, Rect, RRect
+    PathDirection, Rect, RRect, Color, ClipOp
 };
 use torin::prelude::Area;
 
@@ -26,30 +26,61 @@ pub fn render_rect_container(
     let area = area.to_f32();
     
     let mut path = Path::new();
-    let rect = Rect::new(area.min_x(), area.min_y(), area.max_x(), area.max_y());
-
-    path.add_round_rect(
-        rect,
-        radius,
-        PathDirection::CW,
+    let rect = RRect::new_rect_radii(
+        Rect::new(area.min_x(), area.min_y(), area.max_x(), area.max_y()),
+        &[radius.into(), radius.into(), radius.into(), radius.into()]
     );
+    
+    path.add_rrect(&rect, Some((PathDirection::CW, 0)));
+    canvas.draw_path(&path, &paint);
 
     // Shadow effect
-    if node_style.shadow.intensity > 0 {
-        let mut blur_paint = paint.clone();
+    // A box shadow is created by creating a copy of the drawn rectangle
+    // and applying a blur filter and a clip.
+    //
+    // Before applying the filter, we can translate and scale the rectangle
+    // to adjust intensity and blur position.
+    //
+    // If a shadow is inset, then we instead draw an inner stroke and blur that,
+    // clipping whatever blur escapes the shadow's bounding
+    for shadow in node_style.shadows.iter() {
+        if shadow.color != Color::TRANSPARENT {
+            let mut blur_paint = paint.clone();
+            let mut blur_rect = rect.clone();
+    
+            blur_paint.set_color(shadow.color);
+    
+            if shadow.inset {
+                blur_paint.set_style(PaintStyle::Stroke);
+                blur_paint.set_stroke_width(shadow.spread_radius);
+                blur_rect.inset((shadow.spread_radius / 2.0, shadow.spread_radius / 2.0));
+            } else {
+                blur_rect.outset((shadow.spread_radius, shadow.spread_radius));
+            }
+    
+            if shadow.blur_radius != 0.0 {
+                blur_paint.set_mask_filter(MaskFilter::blur(
+                    BlurStyle::Normal,
+                    shadow.blur_radius,
+                    false,
+                ));
+            }
 
-        blur_paint.set_color(node_style.shadow.color);
-        blur_paint.set_alpha(node_style.shadow.intensity);
-        blur_paint.set_mask_filter(MaskFilter::blur(
-            BlurStyle::Normal,
-            node_style.shadow.size,
-            false,
-        ));
-
-        canvas.draw_path(&path, &blur_paint);
+            path.rewind();
+    
+            path.add_rrect(
+                &blur_rect,
+                Some((PathDirection::CW, 0)),
+            );
+    
+            // Exclude the original rect bounds from the shadow
+            canvas.save();
+            let clip_operation = if shadow.inset { ClipOp::Intersect } else { ClipOp::Difference };
+            canvas.clip_rrect(&rect, clip_operation, true);
+            canvas.draw_path(&path, &blur_paint);
+            canvas.restore();
+        }
     }
-
-    canvas.draw_path(&path, &paint);
 
     // Borders
     if node_style.border.width > 0.0 && node_style.border.style != BorderStyle::None {
@@ -62,7 +93,7 @@ pub fn render_rect_container(
 
         path.rewind();
 
-        let mut border_rect = RRect::new_rect_radii(rect, &[radius.into(), radius.into(), radius.into(), radius.into()]);
+        let mut border_rect = rect.clone();
 
         match node_style.border.alignment {
             BorderAlignment::Inner => {
@@ -75,7 +106,7 @@ pub fn render_rect_container(
         }
         
         path.add_rrect(
-            border_rect,
+            &border_rect,
             Some((PathDirection::CW, 0)),
         );
 

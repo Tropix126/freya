@@ -51,6 +51,7 @@ pub struct WindowEnv<T: Clone> {
     pub(crate) window_config: WindowConfig<T>,
 }
 
+
 impl<T: Clone> WindowEnv<T> {
     /// Create a Window environment from a set of configuration
     pub fn from_config(
