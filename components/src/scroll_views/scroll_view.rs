@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use freya_elements::elements as dioxus_elements;
 use freya_elements::events::{keyboard::Key, KeyboardEvent, MouseEvent, WheelEvent};
-use freya_hooks::{use_focus, use_node};
+use freya_hooks::{/*use_focus, */use_node};
 
 use crate::{
     get_container_size, get_corrected_scroll_position, get_scroll_position_from_cursor,
@@ -67,7 +67,7 @@ pub fn ScrollView<'a>(cx: Scope<'a, ScrollViewProps<'a>>) -> Element {
     let scrolled_y = use_ref(cx, || 0);
     let scrolled_x = use_ref(cx, || 0);
     let (node_ref, size) = use_node(cx);
-    let focus = use_focus(cx);
+    // let focus = use_focus(cx);
 
     let padding = &cx.props.padding;
     let user_container_width = &cx.props.width;
@@ -136,7 +136,7 @@ pub fn ScrollView<'a>(cx: Scope<'a, ScrollViewProps<'a>>) -> Element {
 
         scrolled_x.with_mut(|x| *x = scroll_position_x);
 
-        focus.focus();
+        // focus.focus();
     };
 
     // Drag the scrollbars
@@ -168,14 +168,14 @@ pub fn ScrollView<'a>(cx: Scope<'a, ScrollViewProps<'a>>) -> Element {
         }
 
         if clicking_scrollbar.is_some() {
-            focus.focus();
+            // focus.focus();
         }
     };
 
     let onkeydown = move |e: KeyboardEvent| {
-        if !focus.is_focused() {
-            return;
-        }
+        // if !focus.is_focused() {
+        //     return;
+        // }
 
         match &e.key {
             Key::Shift => {

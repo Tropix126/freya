@@ -40,7 +40,7 @@ pub fn use_init_accessibility(cx: &ScopeState) {
     });
 }
 
-pub fn use_accessibility(_: &ScopeState, role: Role) -> UseAccessibility {
+pub fn use_accessibility(cx: &ScopeState, role: Role) -> UseAccessibility {
     let id = *cx.use_hook(|| new_accessibility_id());
     let focused_id = use_shared_state::<Option<AccessibilityId>>(cx);
 

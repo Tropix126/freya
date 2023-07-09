@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use freya_elements::elements as dioxus_elements;
 use freya_elements::events::keyboard::Key;
 use freya_elements::events::{KeyboardEvent, MouseEvent};
-use freya_hooks::{use_focus, use_get_theme};
+use freya_hooks::{/*use_focus, */use_get_theme};
 
 /// [`DropdownItem`] component properties.
 #[derive(Props)]
@@ -42,16 +42,16 @@ where
 {
     let selected = use_shared_state::<T>(cx).unwrap();
     let theme = use_get_theme(cx);
-    let focus = use_focus(cx);
+    // let focus = use_focus(cx);
     let state = use_state(cx, DropdownItemState::default);
 
-    let focus_id = focus.attribute(cx);
-    let is_focused = focus.is_focused();
+    // let focus_id = focus.attribute(cx);
+    // let is_focused = focus.is_focused();
     let is_selected = *selected.read() == cx.props.value;
 
     let background = match *state.get() {
         _ if is_selected => theme.dropdown_item.select_background,
-        _ if is_focused => theme.dropdown_item.hover_background,
+        // _ if is_focused => theme.dropdown_item.hover_background,
         DropdownItemState::Hovering => theme.dropdown_item.hover_background,
         DropdownItemState::Idle => theme.dropdown_item.background,
     };
@@ -72,7 +72,7 @@ where
     };
 
     let onkeydown = move |ev: KeyboardEvent| {
-        if ev.key == Key::Enter && is_focused {
+        if ev.key == Key::Enter /*&& is_focused*/ {
             if let Some(onclick) = &cx.props.onclick {
                 onclick.call(())
             }
@@ -83,7 +83,7 @@ where
         color: color,
         width: "100%",
         height: "35",
-        focus_id: focus_id,
+        // focus_id: focus_id,
         role: "button",
         background: background,
         padding: "6",
@@ -154,13 +154,13 @@ where
     use_shared_state_provider(cx, || cx.props.value.clone());
     let selected = use_shared_state::<T>(cx).unwrap();
     let theme = use_get_theme(cx);
-    let focus = use_focus(cx);
+    // let focus = use_focus(cx);
     let state = use_state(cx, DropdownState::default);
     let opened = use_state(cx, || false);
 
     let is_opened = *opened.get();
-    let is_focused = focus.is_focused();
-    let focus_id = focus.attribute(cx);
+    // let is_focused = focus.is_focused();
+    // let focus_id = focus.attribute(cx);
 
     let desplegable_background = theme.dropdown.desplegable_background;
     let button_background = match *state.get() {
@@ -181,7 +181,7 @@ where
     };
 
     let onclick = move |_| {
-        focus.focus();
+        // focus.focus();
         opened.set(true)
     };
 
@@ -192,7 +192,7 @@ where
                 opened.set(false);
             }
             // Open the dropdown items when the `Enter` key is pressed
-            Key::Enter if is_focused && !is_opened => {
+            Key::Enter if /*is_focused && */!is_opened => {
                 opened.set(true);
             }
             _ => {}
@@ -207,7 +207,7 @@ where
                 margin: "5",
                 rect {
                     overflow: "clip",
-                    focus_id: focus_id,
+                    // focus_id: focus_id,
                     layer: "-1",
                     corner_radius: "3",
                     onglobalclick: onglobalclick,
@@ -226,7 +226,7 @@ where
             rect {
                 margin: "5",
                 overflow: "clip",
-                focus_id: focus_id,
+                // focus_id: focus_id,
                 background: button_background,
                 color: color,
                 corner_radius: "3",

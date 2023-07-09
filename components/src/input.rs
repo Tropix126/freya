@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use freya_elements::elements as dioxus_elements;
 use freya_elements::events::{KeyboardData, MouseEvent};
 use freya_hooks::{
-    use_editable, use_focus, use_get_theme, EditableConfig, EditableEvent, EditableMode, TextEditor,
+    use_editable, /*use_focus, */use_get_theme, EditableConfig, EditableEvent, EditableMode, TextEditor,
 };
 use winit::window::CursorIcon;
 
@@ -63,7 +63,7 @@ pub fn Input<'a>(cx: Scope<'a, InputProps<'a>>) -> Element {
         EditableMode::MultipleLinesSingleEditor,
     );
     let theme = use_get_theme(cx);
-    let focus_manager = use_focus(cx);
+    // let focus_manager = use_focus(cx);
 
     let text = &cx.props.value;
     let button_theme = &theme.button;
@@ -84,14 +84,14 @@ pub fn Input<'a>(cx: Scope<'a, InputProps<'a>>) -> Element {
     });
 
     let onkeydown = {
-        to_owned![editable, focus_manager];
+        to_owned![editable/*, focus_manager*/];
         move |e: Event<KeyboardData>| {
-            if focus_manager.is_focused() {
+            // if focus_manager.is_focused() {
                 editable.process_event(&EditableEvent::KeyDown(e.data));
                 cx.props
                     .onchange
                     .call(editable.editor().current().to_string());
-            }
+            // }
         }
     };
 
@@ -116,11 +116,11 @@ pub fn Input<'a>(cx: Scope<'a, InputProps<'a>>) -> Element {
         }
     };
 
-    let cursor_char = if focus_manager.is_focused() {
-        editable.editor().cursor_pos().to_string()
+    let cursor_char =/* if focus_manager.is_focused() {
+        */editable.editor().cursor_pos().to_string()/*
     } else {
         "none".to_string()
-    };
+    }*/;
     let background = button_theme.background;
     let color = button_theme.font_theme.color;
 
@@ -129,9 +129,9 @@ pub fn Input<'a>(cx: Scope<'a, InputProps<'a>>) -> Element {
             icon: CursorIcon::Text,
             rect {
                 onkeydown: onkeydown,
-                onclick: move |_| {
-                    focus_manager.focus();
-                },
+                // onclick: move |_| {
+                //     focus_manager.focus();
+                // },
                 width: "auto",
                 height: "auto",
                 direction: "both",
