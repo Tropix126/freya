@@ -1,4 +1,3 @@
-mod accessibility;
 mod border;
 mod color;
 mod corner_radius;
@@ -10,11 +9,11 @@ mod font;
 mod gaps;
 mod gradient;
 mod overflow;
+mod role;
 mod shadow;
 mod size;
 mod text_shadow;
 
-pub use accessibility::*;
 pub use border::*;
 pub use color::*;
 pub use corner_radius::*;
@@ -26,6 +25,7 @@ pub use font::*;
 pub use gaps::*;
 pub use gradient::*;
 pub use overflow::*;
+pub use role::*;
 pub use shadow::*;
 pub use size::*;
 pub use text_shadow::*;

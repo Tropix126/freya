@@ -9,7 +9,7 @@ use dioxus_native_core::{
 };
 use freya_dom::prelude::{DioxusDOM, DioxusNode};
 use freya_layout::Layers;
-use freya_node_state::AccessibilityState;
+use freya_node_state::{Accessibility, Fill, FontStyle, Style};
 use std::slice::Iter;
 use tokio::sync::watch;
 use torin::{prelude::NodeAreas, torin::Torin};
@@ -22,40 +22,22 @@ pub enum AccessibilityFocusDirection {
 }
 
 pub trait AccessibilityProvider {
-    /// Add a Node to the Accessibility Tree.
+    /// Add a Dioxus Node to the Accessibility Tree, applying properties as needed.
     fn add_node(
         &mut self,
         dioxus_node: &DioxusNode,
         node_areas: &NodeAreas,
-        accessibility_id: AccessibilityId,
-        node_accessibility: &AccessibilityState,
+        node_accessibility: &Accessibility,
     ) {
+        let node_style = &*dioxus_node.get::<Style>().unwrap();
+        let node_font_style = &*dioxus_node.get::<FontStyle>().unwrap();
+
+        // Make sure that there's valid data to add.
         let mut builder = NodeBuilder::new(Role::Unknown);
 
-        // Set children
-        let children = dioxus_node.get_accessibility_children();
-        if !children.is_empty() {
-            builder.set_children(children);
-        }
-
-        // Set text value
-        if let Some(alt) = &node_accessibility.alt {
-            builder.set_value(alt.to_owned());
-        } else if let Some(value) = dioxus_node.get_inner_texts() {
-            builder.set_value(value);
-        }
-
-        // Set name
-        if let Some(name) = &node_accessibility.name {
-            builder.set_name(name.to_owned());
-        }
-
-        // Set role
-        if let Some(role) = node_accessibility.role {
-            builder.set_role(role);
-        }
-
-        // Set the area
+        // Generic properties
+        // These are accessibility properties that are common to all nodes, and can thus be
+        // inferred from them automatically.
         let area = node_areas.area.to_f64();
         builder.set_bounds(Rect {
             x0: area.min_x(),
@@ -64,17 +46,48 @@ pub trait AccessibilityProvider {
             y1: area.max_y(),
         });
 
+        // Color/styling-related properties
+        // Do these only apply for text-related roles? Does it matter if they're applied to
+        // a node where they don't matter on?
+        let foreground = node_font_style.color;
+        builder.set_foreground_color(u32::from_be_bytes([
+            foreground.r(),
+            foreground.g(),
+            foreground.b(),
+            foreground.a(),
+        ]));
+        if let Fill::Color(background) = node_style.background {
+            builder.set_background_color(u32::from_be_bytes([
+                background.r(),
+                background.g(),
+                background.b(),
+                background.a(),
+            ]));
+        }
+
+        // We don't support RTL yet.
+        builder.set_text_direction(accesskit::TextDirection::LeftToRight);
+
+        // NOTE: Probably not needed, but could be inferred.
+        // builder.set_aria_role();
+
         // Set focusable action
         if node_accessibility.focusable {
             builder.add_action(Action::Focus);
+            // TODO
+            // builder.add_action(Action::Blur);
         } else {
             builder.add_action(Action::Default);
-            builder.set_default_action_verb(DefaultActionVerb::Focus);
+            builder.set_default_action_verb(DefaultActionVerb::Click);
         }
 
+        builder.set_children(dioxus_node.get_accessible_children());
+
         // Insert the node into the Tree
-        let node = builder.build(self.node_classes());
-        self.push_node(accessibility_id, node);
+        if let Some(id) = node_accessibility.id {
+            let node = builder.build(self.node_classes());
+            self.push_node(id, node);
+        }
     }
 
     /// Push a Node into the Accesibility Tree.
@@ -208,7 +221,7 @@ trait NodeAccessibility {
     fn get_inner_texts(&self) -> Option<String>;
 
     /// Collect all the AccessibilityIDs from a Node's children
-    fn get_accessibility_children(&self) -> Vec<AccessibilityId>;
+    fn get_accessible_children(&self) -> Vec<AccessibilityId>;
 }
 
 impl NodeAccessibility for DioxusNode<'_> {
@@ -225,12 +238,12 @@ impl NodeAccessibility for DioxusNode<'_> {
     }
 
     /// Collect all the AccessibilityIDs from a Node's children
-    fn get_accessibility_children(&self) -> Vec<AccessibilityId> {
+    fn get_accessible_children(&self) -> Vec<AccessibilityId> {
         self.children()
             .iter()
             .filter_map(|child| {
-                let node_accessibility = &*child.get::<AccessibilityState>().unwrap();
-                node_accessibility.focus_id
+                let node_accessibility = &*child.get::<Accessibility>().unwrap();
+                node_accessibility.id
             })
             .collect::<Vec<AccessibilityId>>()
     }
@@ -247,14 +260,10 @@ pub fn process_accessibility(
             let node_areas = layout.get(*node_id).unwrap();
             let dioxus_node = rdom.get(*node_id);
             if let Some(dioxus_node) = dioxus_node {
-                let node_accessibility = &*dioxus_node.get::<AccessibilityState>().unwrap();
-                if let Some(accessibility_id) = node_accessibility.focus_id {
-                    access_provider.add_node(
-                        &dioxus_node,
-                        node_areas,
-                        accessibility_id,
-                        node_accessibility,
-                    );
+                let node_accessibility = &*dioxus_node.get::<Accessibility>().unwrap();
+
+                if node_accessibility.id.is_some() {
+                    access_provider.add_node(&dioxus_node, node_areas, node_accessibility);
                 }
             }
         }

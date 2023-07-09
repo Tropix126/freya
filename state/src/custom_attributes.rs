@@ -4,7 +4,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use accesskit::NodeId as AccessibilityId;
+use crate::Role;
 use bytes::Bytes;
 use dioxus_core::{AttributeValue, Scope};
 use dioxus_native_core::node::FromAnyValue;
@@ -111,7 +111,7 @@ pub enum CustomAttributeValues {
     CursorReference(CursorReference),
     Bytes(Vec<u8>),
     ImageReference(ImageReference),
-    FocusId(AccessibilityId),
+    Role(Role),
     TextHighlights(Vec<(usize, usize)>),
     Canvas(CanvasReference),
 }
@@ -123,7 +123,7 @@ impl Debug for CustomAttributeValues {
             Self::CursorReference(_) => f.debug_tuple("CursorReference").finish(),
             Self::Bytes(_) => f.debug_tuple("Bytes").finish(),
             Self::ImageReference(_) => f.debug_tuple("ImageReference").finish(),
-            Self::FocusId(_) => f.debug_tuple("FocusId").finish(),
+            Self::Role(_) => f.debug_tuple("Role").finish(),
             Self::TextHighlights(_) => f.debug_tuple("TextHighlights").finish(),
             Self::Canvas(_) => f.debug_tuple("Canvas").finish(),
         }

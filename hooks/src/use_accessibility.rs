@@ -1,15 +1,19 @@
+use accesskit::NodeId as AccessibilityId;
 use dioxus_core::ScopeState;
-use dioxus_hooks::{to_owned, use_effect, use_shared_state};
+use dioxus_hooks::{to_owned, use_effect, use_shared_state, use_shared_state_provider};
 use freya_common::EventMessage;
 use freya_core::FocusReceiver;
+use freya_node_state::{Role, UseAccessibility, new_accessibility_id};
 
-use crate::{use_platform, FocusId};
+use crate::use_platform;
 
 /// Sync both the Focus shared state and the platform accessibility focus
 pub fn use_init_accessibility(cx: &ScopeState) {
     let platform = use_platform(cx);
-    let focused_id = use_shared_state::<Option<FocusId>>(cx).unwrap();
+    let focused_id = use_shared_state::<Option<AccessibilityId>>(cx).unwrap();
     let current_focused_id = *focused_id.read();
+
+    use_shared_state_provider::<Option<AccessibilityId>>(cx, || None);
 
     use_effect(cx, &(current_focused_id,), move |(focused_id,)| {
         if let Some(focused_id) = focused_id {
@@ -34,6 +38,13 @@ pub fn use_init_accessibility(cx: &ScopeState) {
             }
         }
     });
+}
+
+pub fn use_accessibility(_: &ScopeState, role: Role) -> UseAccessibility {
+    let id = *cx.use_hook(|| new_accessibility_id());
+    let focused_id = use_shared_state::<Option<AccessibilityId>>(cx);
+
+    UseAccessibility { role, id, focused_id }
 }
 
 #[cfg(test)]

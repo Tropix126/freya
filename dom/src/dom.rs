@@ -7,7 +7,7 @@ use dioxus_native_core::{
     NodeId, SendAnyMap,
 };
 use freya_node_state::{
-    AccessibilityState, CursorSettings, CustomAttributeValues, FontStyle, LayoutState, References,
+    Accessibility, CursorSettings, CustomAttributeValues, FontStyle, LayoutState, References,
     Style, Transform,
 };
 use std::sync::MutexGuard;
@@ -92,7 +92,7 @@ impl Default for FreyaDOM {
             LayoutState::to_type_erased(),
             Style::to_type_erased(),
             Transform::to_type_erased(),
-            AccessibilityState::to_type_erased(),
+            Accessibility::to_type_erased(),
         ]);
         let dioxus_integration_state = DioxusState::create(&mut rdom);
         Self {
