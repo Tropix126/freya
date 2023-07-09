@@ -10,10 +10,11 @@ use crate::use_platform;
 /// Sync both the Focus shared state and the platform accessibility focus
 pub fn use_init_accessibility(cx: &ScopeState) {
     let platform = use_platform(cx);
+    
+    use_shared_state_provider::<Option<AccessibilityId>>(cx, || None);
     let focused_id = use_shared_state::<Option<AccessibilityId>>(cx).unwrap();
     let current_focused_id = *focused_id.read();
 
-    use_shared_state_provider::<Option<AccessibilityId>>(cx, || None);
 
     use_effect(cx, &(current_focused_id,), move |(focused_id,)| {
         if let Some(focused_id) = focused_id {
